@@ -7,9 +7,10 @@
 .summaryline{padding:12px 15px;background:#192e47;border-left:3px solid #79aef5;border-radius:8px;line-height:1.8}
 @media(max-width:650px){.autogrid{grid-template-columns:1fr}}
 </style></head><body><main>
-<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v6｜支撐壓力置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
+<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v7｜支撐壓力圖表置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
 <section class="card" id="levelsCard" style="border:2px solid #648fba"><h2>每日關鍵價位｜第一、第二支撐與壓力（自動計算）</h2>
 <p class="small">根據所選到期別的 Call／Put 未平倉量，找出附近候選價位；不是盤中成交驗證，也不是保證的支撐壓力。觸發條件需用實際台指／期貨價格與成交量確認。</p>
+<div style="background:#0d1c30;border:1px solid #395677;border-radius:12px;padding:12px;margin:12px 0"><h3 style="margin:5px 6px 9px;font-size:17px">自動價格地圖｜支撐、壓力與突破後下一關</h3><div id="levelsMap" role="img" aria-label="自動候選支撐壓力圖表" style="width:100%;overflow-x:auto"><p class="small">正在生成支撐壓力圖表…</p></div><small>橘色＝候選壓力；綠色＝候選支撐；黃色＝選擇權平價價格代理。越靠近中線，越接近參考價格；此圖為選擇權籌碼地圖，不是即時 K 線。</small></div>
 <div class="autogrid">
 <div class="autoitem"><small>上方候選壓力（Call OI）</small><div class="metric" id="resLevels">正在讀取行情</div><small id="resDetail"></small></div>
 <div class="autoitem"><small>下方候選支撐（Put OI）</small><div class="metric" id="supLevels">正在讀取行情</div><small id="supDetail"></small></div>
@@ -131,9 +132,39 @@ function showInterpretation(v){
  el('summary').textContent=`方向模型：${r}。這是價格趨勢代理的分類，不等於 GEX/VEX 提供的確定漲跌訊號。GEX/VEX 仍須假設造市商持倉方向；請對照現貨趨勢、IV、履約價壓力與 Delta 後才考慮建倉。`;
 }
 
+function drawLevelsMap(spot,rs,ss,expiry){
+ const host=el('levelsMap');
+ if(!host)return;
+ if(!(spot>0)){host.textContent='無可用價格代理，無法繪圖';return;}
+ const sorted=[...rs.map((a,i)=>({...a,type:'R',rank:i+1,oi:a.C})),...ss.map((a,i)=>({...a,type:'S',rank:i+1,oi:a.P}))].sort((a,b)=>b.k-a.k);
+ if(!sorted.length){host.textContent='未找到符合門檻的未平倉量集中價位';return;}
+ const w=800,l=136,right=778,top=32,rowH=45,mid=Math.max(1,sorted.findIndex(x=>x.k<spot));
+ const above=sorted.filter(x=>x.k>spot),below=sorted.filter(x=>x.k<spot);
+ const rows=[...above,{k:spot,type:'P',rank:0,oi:0},...below];
+ const h=48+rows.length*rowH;
+ const ns='http://www.w3.org/2000/svg';
+ const root=document.createElementNS(ns,'svg');root.setAttribute('viewBox',`0 0 ${w} ${h}`);root.setAttribute('style',`display:block;width:100%;min-width:520px;background:#0d1c30`);
+ function node(tag,attrs={},txt=''){let e=document.createElementNS(ns,tag);for(let [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));if(txt)e.textContent=txt;root.appendChild(e);return e;}
+ node('text',{x:16,y:19,fill:'#adc2dc','font-size':13},`交易日 ${date(DATA.data_date)} ／ 到期別 ${expiry}`);
+ const maxOI=Math.max(1,...sorted.map(a=>a.oi));
+ rows.forEach((a,i)=>{
+   const y=34+i*rowH,ref=a.type==='P',col=ref?'#ffd06d':a.type==='R'?'#f38a85':'#68d6a9';
+   node('rect',{x:8,y:y-11,width:784,height:39,rx:7,fill:ref?'#3a3226':i%2?'#14253d':'#102138'});
+   node('text',{x:16,y:y+14,fill:col,'font-size':15,'font-weight':ref?750:650},`${Math.round(a.k).toLocaleString('zh-TW')}`);
+   let label=ref?'價格代理':a.type==='R'?`壓力 ${a.rank}`:`支撐 ${a.rank}`;
+   node('text',{x:145,y:y+14,fill:col,'font-size':14},label);
+   if(ref){node('line',{x1:250,y1:y+9,x2:764,y2:y+9,stroke:col,'stroke-width':2,'stroke-dasharray':'7 5'});}
+   else {
+     const len=Math.max(5,Math.round(340*a.oi/maxOI));
+     node('rect',{x:255,y:y-1,width:len,height:17,rx:4,fill:col,opacity:.82});
+     node('text',{x:605,y:y+14,fill:'#c9daf0','font-size':13},`${a.type==='R'?'Call':'Put'} OI ${a.oi.toLocaleString('zh-TW')} 口`);
+   }
+ });
+ host.replaceChildren(root);
+}
 function setLevels(expiry,spot){
  const res=el('resLevels'),sup=el('supLevels'),br=el('breakLevels'),note=el('levelsNotice');
- if(!(spot>0)||!DATA){res.textContent=sup.textContent='資料不足';br.textContent='無法建立觀察價';note.textContent='價格代理無效，停止估算。';return;}
+ if(!(spot>0)||!DATA){el('levelsMap').textContent='無可用價格代理，暫停繪圖';res.textContent=sup.textContent='資料不足';br.textContent='無法建立觀察價';note.textContent='價格代理無效，停止估算。';return;}
  const rows=DATA.rows.filter(r=>r.expiry===expiry && r.strike>0 && r.oi>0);
  const sums=new Map();for(const r of rows){const a=sums.get(r.strike)||{k:r.strike,C:0,P:0};a[r.cp]+=r.oi;sums.set(r.strike,a);}
  const all=[...sums.values()],window=Math.max(1200,spot*.035);
@@ -143,6 +174,7 @@ function setLevels(expiry,spot){
  // Include only material OI concentrations, then order by proximity to the reference.
  const rs=up.filter(x=>x.C>=Math.max(100,maxU*.25)).sort((a,b)=>a.k-b.k).slice(0,4);
  const ss=down.filter(x=>x.P>=Math.max(100,maxD*.25)).sort((a,b)=>b.k-a.k).slice(0,4);
+ drawLevelsMap(spot,rs,ss,expiry);
  const nice=x=>x.map((y,i)=>`${i+1}. ${fmt(y.k)}`).join('｜')||'無候選';
  res.textContent=nice(rs);sup.textContent=nice(ss);
  el('resDetail').textContent=rs.map(x=>`${fmt(x.k)}：${fmt(x.C)} 口`).join('｜')||'附近沒有符合門檻的 Call OI 集中履約價';
