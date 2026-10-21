@@ -1,7 +1,8 @@
+[README_V8.txt](https://github.com/user-attachments/files/33757744/README_V8.txt)
 # 台指選擇權盤後曝險與逐日驗證儀表板 v2
 
 使用期交所公開 TXO 每日結算行情；GitHub Actions 定時更新、GitHub Pages 以 `/docs` 發布。沒有付費 API。
-
+v8 升級：上傳 docs/index.html、scripts/archive_oi.py、.github/workflows/daily.yml。請保留現有 docs/data.json 與其他歷史檔案。執行 GitHub Actions 一次後會建立 docs/oi_compare.json 和 docs/oi_history/YYYYMMDD.json。首日無昨日比較，第二個不同有效交易日才顯示比較。
 ## 功能
 - 官方資料日期、抓取時間（台灣）、分析時間各自顯示。
 - 從相同月份 C/P 結算價計算簡化 put-call parity **價格代理**；**不等於台指現貨或期貨市價**。
