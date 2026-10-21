@@ -1,13 +1,13 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>台指 TXO 曝險與預測驗證</title><script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script><style>
 :root{color-scheme:dark;font-family:system-ui,'Microsoft JhengHei',sans-serif;background:#081323;color:#eef4ff}*{box-sizing:border-box}body{margin:0}main{max-width:1380px;margin:auto;padding:22px}h1{margin:0 0 8px;font-size:25px}h2{font-size:17px;margin:0 0 13px}.small,small{color:#9fb2cd;line-height:1.65}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:#122139;border:1px solid #2b405e;border-radius:12px;padding:18px;margin-bottom:12px}.metric{font-size:25px;font-weight:750;margin:6px 0}.warning{background:#352b29;border:1px solid #84684d;padding:14px;border-radius:9px;line-height:1.7;margin:12px 0} .pill{display:inline-block;border-radius:20px;background:#384961;padding:7px 14px;font-weight:bold}.chip{padding:7px 12px;border:1px solid #47607d;border-radius:6px}label{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}input,select,button{background:#192f4d;color:white;border:1px solid #446183;padding:9px;border-radius:8px}button{cursor:pointer}.controls{display:flex;gap:14px;flex-wrap:wrap;align-items:center} .plot{height:330px}ul{line-height:1.85}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #2c4160;padding:9px;text-align:left}.right{text-align:right}@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}}@media(max-width:500px){.grid{grid-template-columns:1fr}.plot{height:280px}}
 </style></head><body><main>
-<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v2・非盤中即時行情・臺灣時間（UTC+8）</div></header>
+<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v3・非盤中即時行情・臺灣時間（UTC+8）</div></header>
 <div class="warning">官方選擇權未平倉量不是造市商持倉。價格代理 ≠ 台指現貨或期貨報價；GEX／VEX 需假設造市商方向和波動率，不可把模型結果當確定的支撐、壓力或交易訊號。</div>
 <section class="card"><h2>資料時間與自動更新狀態</h2><div class="grid"><div><small>行情所屬交易日</small><div class="metric" id="tradeDate">—</div></div><div><small>官方資料抓取時間（台灣）</small><div class="metric" style="font-size:17px" id="fetched">—</div></div><div><small>模型計算時間（台灣）</small><div class="metric" style="font-size:17px" id="modeled">—</div></div><div><small>資料筆數</small><div class="metric" id="count">—</div></div></div><p id="stale" class="small"></p></section>
 <section class="card"><h2>今日行情判斷及原因（預測下一個交易日）</h2><span class="pill" id="regime">等待資料</span><p id="reason"></p><div id="advice" class="warning"></div><small id="automatic"></small></section>
 <div class="grid"><div class="card"><small>累積歷史代理日數</small><div class="metric" id="days">—</div><small>至少 21 日才開始方向分類</small></div><div class="card"><small>已完成的隔日驗證</small><div class="metric" id="evaluated">—</div><small>不補造過去的預測</small></div><div class="card"><small>多／空／盤整方向命中率</small><div class="metric" id="direction">—</div><small>含樣本數，非保證績效</small></div><div class="card"><small>五種行情完全命中率</small><div class="metric" id="exact">—</div><small>強多與偏多視為不同類</small></div></div>
 <section class="card"><h2>歷史預測 vs. 實際結果</h2><div class="small" id="verifyNote"></div><div style="overflow-x:auto"><table><thead><tr><th>預測日</th><th>驗證日</th><th>預測</th><th>實際</th><th>代理漲跌</th><th>方向</th></tr></thead><tbody id="history"><tr><td colspan="6">尚無可驗證紀錄</td></tr></tbody></table></div></section>
-<section class="card"><h2>期權曝險模型（情境估算，非真實造市商曝險）</h2><div class="controls"><label>到期別 <select id="expiry"></select></label><label>參考價格 <input id="spot" type="number" step="1" placeholder="尚無自動價格代理" style="width:160px"></label><label>假設 IV% <input id="iv" type="number" value="22" min="1" max="150" step="1" style="width:80px"></label><label>剩餘天數 <input id="tenor" type="number" value="7" min="0.1" max="365" step=".1" style="width:85px"></label><label>方向假設 <select id="scenario"><option value="mixed">短 Call／長 Put（假設）</option><option value="positive">全部長 Gamma（壓測）</option><option value="negative">全部短 Gamma（壓測）</option></select></label><button id="calculate">更新情境圖</button></div><p class="small" id="manual">注意：IV、剩餘天數目前需自行核對；這兩項不是自動抓取的官方值。若代理價無法計算，參考價格也須手動輸入。</p><div class="grid"><div><small>Gamma Flip</small><div class="metric" id="flip">—</div></div><div><small>Call Wall（代理）</small><div class="metric" id="callwall">—</div></div><div><small>Put Wall（代理）</small><div class="metric" id="putwall">—</div></div><div><small>價格代理（非現貨）</small><div class="metric" id="proxy">—</div></div></div></section>
+<section class="card"><h2>期權曝險模型（情境估算，非真實造市商曝險）</h2><div class="controls"><label>到期別 <select id="expiry"></select></label><details id="advanced"><summary style="cursor:pointer;color:#b9dcff">進階：查看自動估算值／需要時手動修正</summary><div class="controls" style="margin:12px 0"><label>價格代理 <input id="spot" type="number" step="1" style="width:150px"></label><label>IV 估算（%） <input id="iv" type="number" min="1" max="150" step=".01" style="width:85px"></label><label>剩餘天數 <input id="tenor" type="number" min=".1" max="365" step=".1" style="width:85px"></label></div><small>修改這三個欄位即切換成手動情境；更換到期別會恢復自動估算。</small></details><label>方向假設 <select id="scenario"><option value="mixed">短 Call／長 Put（假設）</option><option value="positive">全部長 Gamma（壓測）</option><option value="negative">全部短 Gamma（壓測）</option></select></label><button id="calculate">更新情境圖</button></div><p class="small" id="manual">正在自動估算價格、IV 與到期剩餘時間…</p><div class="grid"><div><small>Gamma Flip</small><div class="metric" id="flip">—</div></div><div><small>Call Wall（代理）</small><div class="metric" id="callwall">—</div></div><div><small>Put Wall（代理）</small><div class="metric" id="putwall">—</div></div><div><small>價格代理（非現貨）</small><div class="metric" id="proxy">—</div></div></div></section>
 <div class="charts"><div class="card"><h2>GEX 各履約價</h2><div class="plot" id="gex"></div></div><div class="card"><h2>VEX 各履約價</h2><div class="plot" id="vex"></div></div><div class="card"><h2>GEX 曲線與 Gamma Flip</h2><div class="plot" id="curve"></div></div><div class="card"><h2>GEX+（自訂正值部分）</h2><div class="plot" id="plus"></div></div></div>
 <p class="small">曝險圖採簡化 Black–Scholes Gamma/Vanna，合約乘數每點 50 元。GEX+ 是本專案的自訂定義，不等同參考文章的私有公式。分類模型僅根據 21 日以上的買賣權平價代理趨勢；它不使用圖中的假設 IV 作方向訊號。自適應門檻須累積至少 30 筆事先記錄且已驗證的預測，避免事後修改紀錄。</p>
 </main><script>
@@ -18,6 +18,70 @@ function advice(regime){return {'強多':'模型偏向強勢上行。先確認�
 function greeks(S,K,sig,T){if(!(S>0&&K>0&&sig>0&&T>0))return [0,0];let d1=(Math.log(S/K)+.5*sig*sig*T)/(sig*Math.sqrt(T)),d2=d1-sig*Math.sqrt(T),phi=Math.exp(-d1*d1/2)/Math.sqrt(2*Math.PI);return [phi/(S*sig*Math.sqrt(T)),-phi*d2/sig]}
 function ex(rows,S,iv,T,mode){let m=new Map();for(let r of rows){let [g,v]=greeks(S,r.strike,iv,T),sign=mode==='positive'?1:mode==='negative'?-1:(r.cp==='C'?-1:1),x=sign*g*r.oi*50*S*S*.01;let item=m.get(r.strike)||{strike:r.strike,gex:0,vex:0,plus:0,c:0,p:0};item.gex+=x;item.vex+=sign*v*r.oi*50*.01;item.plus+=Math.max(0,x);item[r.cp==='C'?'c':'p']+=Math.abs(x);m.set(r.strike,item)}return [...m.values()].sort((a,b)=>a.strike-b.strike)}
 function chart(id,trace){if(!window.Plotly)return;Plotly.react(id,trace,{paper_bgcolor:'#122139',plot_bgcolor:'#122139',font:{color:'#a4b9d4'},margin:{l:75,r:15,t:10,b:40},xaxis:{gridcolor:'#2c4160'},yaxis:{gridcolor:'#2c4160',zerolinecolor:'#63758b'},showlegend:false},{responsive:true,displaylogo:false})}
+
+// v3: monthly option expiry = third Wednesday (unless official holiday-adjusted).
+// Uses OFFICIAL data_date rather than browser's current date; no hard-coded IV/tenor.
+function thirdWed(code){
+ if(!/^\d{6}$/.test(code))return null;
+ let y=+code.slice(0,4),m=+code.slice(4,6);
+ if(m<1||m>12)return null;
+ let first=new Date(Date.UTC(y,m-1,1)),offset=(3-first.getUTCDay()+7)%7;
+ return new Date(Date.UTC(y,m-1,1+offset+14));
+}
+function tenorFromSnapshot(code,day){
+ let expiry=thirdWed(code);
+ if(!expiry||!/^\d{8}$/.test(day))return null;
+ let start=new Date(Date.UTC(+day.slice(0,4),+day.slice(4,6)-1,+day.slice(6,8)));
+ let days=(expiry-start)/86400000;
+ return days>0?days:null;
+}
+function normCdf(x){const t=1/(1+.2316419*Math.abs(x)),z=Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);const v=1-z*t*(.319381530+t*(-.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));return x>=0?v:1-v;}
+function optPrice(F,K,vol,T,cp){
+ if(vol<=0||T<=0)return cp==='C'?Math.max(F-K,0):Math.max(K-F,0);
+ let d=(Math.log(F/K)+.5*vol*vol*T)/(vol*Math.sqrt(T)), d2=d-vol*Math.sqrt(T);
+ return cp==='C'?F*normCdf(d)-K*normCdf(d2):K*normCdf(-d2)-F*normCdf(-d);
+}
+function impliedVol(market,F,K,T,cp){
+ let lower=optPrice(F,K,0,T,cp);
+ if(!(market>lower+.05&&market<F+K))return null;
+ let lo=.01,hi=1.5;
+ if(optPrice(F,K,hi,T,cp)<market)return null;
+ for(let j=0;j<65;j++){let mid=(lo+hi)/2;if(optPrice(F,K,mid,T,cp)>market)hi=mid;else lo=mid;}
+ return (lo+hi)/2;
+}
+function median(a){if(!a.length)return null;let z=a.slice().sort((x,y)=>x-y);return z.length%2?z[(z.length-1)/2]:(z[z.length/2-1]+z[z.length/2])/2;}
+function estimateContract(rows,expiry,day){
+ let t=tenorFromSnapshot(expiry,day);
+ if(t===null)return {error:'此到期別為週選、特殊契約，或交易日已超過推算到期日；無法安全推算時間。請選月選，或於進階欄位手動輸入並核對官方到期日。'};
+ let pairs=new Map();
+ for(let r of rows){if(!(r.price>0&&r.strike>0))continue;let p=pairs.get(r.strike)||{};p[r.cp]=r;pairs.set(r.strike,p)}
+ let forwards=[];
+ for(let [k,q] of pairs){if(q.C&&q.P&&q.C.oi+q.P.oi>=10){let f=k+q.C.price-q.P.price;if(f>0)forwards.push(f)}}
+ let forward=median(forwards);
+ if(!forward||forwards.length<7)return {error:'有效買賣權配對不足，無法自動估算參考價格。'};
+ let valid=forwards.filter(x=>Math.abs(x-forward)/forward<.035);
+ forward=median(valid);
+ if(!forward||valid.length<5)return {error:'買賣權平價配對離散度太高，暫停自動計算。'};
+ let near=[...pairs].filter(([k])=>Math.abs(k-forward)/forward<.035).sort((a,b)=>Math.abs(a[0]-forward)-Math.abs(b[0]-forward)).slice(0,36);
+ let vols=[];
+ for(let [k,q] of near){
+   let r=k>=forward?q.C:q.P;if(!r||!(r.price>0))continue;
+   let iv=impliedVol(r.price,forward,k,t/365,r.cp);
+   if(iv!==null&&iv>.02&&iv<1.49)vols.push(iv);
+ }
+ if(vols.length<5)return {spot:forward,tenor:t,error:'IV 有效報價少於 5 筆；不能用預設 IV 假裝是行情。'};
+ return {spot:forward,tenor:t,iv:median(vols)*100,pairs:valid.length,ivs:vols.length};
+}
+function autoApply(){
+ if(!DATA)return;
+ let expiry=el('expiry').value,rows=DATA.rows.filter(x=>x.expiry===expiry);
+ let v=estimateContract(rows,expiry,DATA.data_date);
+ el('spot').value=v.spot??'';el('iv').value=v.iv?.toFixed(2)??'';el('tenor').value=v.tenor?.toFixed(1)??'';
+ el('manual').textContent=v.error
+ ?'⚠️ 自動估算未完成：'+v.error+' 若要手動輸入，請展開「進階」。'
+ :`✅ 自動估算完成｜參考價格 ${fmt(v.spot)}（買賣權平價代理）｜IV ${v.iv.toFixed(2)}%（${v.ivs} 筆價格反推）｜距離月選結算 ${v.tenor.toFixed(1)} 天（以行情日計算）。非官方現貨／造市商持倉，月選遇休市調整需核對到期日。`;
+ render();
+}
 function render(){if(!DATA)return;let rows=DATA.rows.filter(x=>x.expiry===el('expiry').value),S=+el('spot').value,iv=+el('iv').value/100,T=+el('tenor').value/365,mode=el('scenario').value;if(!rows.length||!S||!iv||!T){el('manual').textContent='缺少有效到期別、參考價格、IV 或剩餘天數，暫停曝險情境計算；請先手動確認。';return}let a=ex(rows,S,iv,T,mode),xs=a.map(x=>x.strike),g=a.map(x=>x.gex),v=a.map(x=>x.vex),wall=k=>a.reduce((p,x)=>!p||x[k]>p[k]?x:p,null);el('callwall').textContent=fmt(wall('c')?.strike);el('putwall').textContent=fmt(wall('p')?.strike);chart('gex',[{type:'bar',x:xs,y:g,marker:{color:g.map(v=>v>=0?'#4aa994':'#d87983')}}]);chart('vex',[{type:'bar',x:xs,y:v,marker:{color:'#74a6e6'}}]);chart('plus',[{type:'bar',x:xs,y:a.map(x=>x.plus),marker:{color:'#44a98a'}}]);let min=S*.88,max=S*1.12,points=Array.from({length:61},(_,i)=>min+(max-min)*i/60),curve=points.map(p=>ex(rows,p,iv,T,mode).reduce((s,x)=>s+x.gex,0)),cross=[];for(let i=1;i<curve.length;i++)if(curve[i]*curve[i-1]<0)cross.push(points[i-1]+(points[i]-points[i-1])*-curve[i-1]/(curve[i]-curve[i-1]));el('flip').textContent=cross.length?fmt(cross.reduce((a,b)=>Math.abs(a-S)<Math.abs(b-S)?a:b)):'未找到';chart('curve',[{type:'scatter',mode:'lines',x:points,y:curve,line:{color:'#8fb8fa'}}]);}
-async function init(){try{[DATA,AN]=await Promise.all([json('data.json'),json('analysis.json')]);el('tradeDate').textContent=date(DATA.data_date);el('fetched').textContent=time(DATA.retrieved_at);el('modeled').textContent=time(AN.model_updated_at);el('count').textContent=fmt(DATA.rows.length);let p=AN.latest_prediction||{},r=p.regime||'等待資料';el('regime').textContent=r;el('reason').textContent=p.reason||'歷史資料尚未累積';el('advice').textContent=advice(r);el('automatic').textContent='自動：選擇權盤後資料、平價代理、歷史留存、次日驗證。需人工：驗證真實台指點位、IV／到期日，才能可靠解讀曝險及交易策略。';el('days').textContent=AN.history_days??0;el('evaluated').textContent=AN.evaluated_count??0;el('direction').textContent=AN.direction_accuracy==null?'樣本不足':(AN.direction_accuracy*100).toFixed(1)+'%';el('exact').textContent=AN.exact_accuracy==null?'樣本不足':(AN.exact_accuracy*100).toFixed(1)+'%';el('verifyNote').textContent=AN.backtest_note||'尚未有下一交易日結果';let histories=AN.latest_evaluations||[];if(histories.length)el('history').innerHTML=histories.slice().reverse().map(v=>`<tr><td>${v.prediction_date}</td><td>${v.outcome_date}</td><td>${v.predicted}</td><td>${v.actual}</td><td>${(v.return*100).toFixed(2)}%</td><td>${v.direction_hit?'命中':'未命中'}</td></tr>`).join('');let exps=[...new Set(DATA.rows.map(x=>x.expiry))].sort();el('expiry').innerHTML=exps.map(s=>`<option>${s}</option>`).join('');let px=AN.proxy?.price;el('proxy').textContent=px?fmt(px):'無有效代理';if(px)el('spot').value=px;el('stale').textContent='資料為 '+date(DATA.data_date)+' 的盤後快照，抓取時間不是行情即時時間。'+(AN.history_days<21?' 尚未累積 21 個可用的不同交易日，方向判斷暫停。':'');el('calculate').onclick=render;el('expiry').onchange=render;render();}catch(e){el('stale').textContent='資料無法載入：'+e.message+'。請檢查 Actions 和 docs 檔案。';el('regime').textContent='資料不足／等待確認';el('advice').textContent='不能依此頁面建立新倉。';}}
+async function init(){try{[DATA,AN]=await Promise.all([json('data.json'),json('analysis.json')]);el('tradeDate').textContent=date(DATA.data_date);el('fetched').textContent=time(DATA.retrieved_at);el('modeled').textContent=time(AN.model_updated_at);el('count').textContent=fmt(DATA.rows.length);let p=AN.latest_prediction||{},r=p.regime||'等待資料';el('regime').textContent=r;el('reason').textContent=p.reason||'歷史資料尚未累積';el('advice').textContent=advice(r);el('automatic').textContent='自動：選擇權盤後資料、平價代理、歷史留存、次日驗證。自動估算：月選平價代理、IV、距到期天數；人工僅用於官方休市改期、特殊到期別或報價不足，進階欄位會提示。';el('days').textContent=AN.history_days??0;el('evaluated').textContent=AN.evaluated_count??0;el('direction').textContent=AN.direction_accuracy==null?'樣本不足':(AN.direction_accuracy*100).toFixed(1)+'%';el('exact').textContent=AN.exact_accuracy==null?'樣本不足':(AN.exact_accuracy*100).toFixed(1)+'%';el('verifyNote').textContent=AN.backtest_note||'尚未有下一交易日結果';let histories=AN.latest_evaluations||[];if(histories.length)el('history').innerHTML=histories.slice().reverse().map(v=>`<tr><td>${v.prediction_date}</td><td>${v.outcome_date}</td><td>${v.predicted}</td><td>${v.actual}</td><td>${(v.return*100).toFixed(2)}%</td><td>${v.direction_hit?'命中':'未命中'}</td></tr>`).join('');let exps=[...new Set(DATA.rows.map(x=>x.expiry))].sort();el('expiry').innerHTML=exps.map(s=>`<option>${s}</option>`).join('');let px=AN.proxy?.price;el('proxy').textContent=px?fmt(px):'無有效代理';el('stale').textContent='資料為 '+date(DATA.data_date)+' 的盤後快照，抓取時間不是行情即時時間。'+(AN.history_days<21?' 尚未累積 21 個可用的不同交易日，方向判斷暫停。':'');el('calculate').onclick=render;el('expiry').onchange=autoApply;let monthly=exps.find(x=>/^\d{6}$/.test(x)&&tenorFromSnapshot(x,DATA.data_date)!==null);if(monthly)el('expiry').value=monthly;autoApply();}catch(e){el('stale').textContent='資料無法載入：'+e.message+'。請檢查 Actions 和 docs 檔案。';el('regime').textContent='資料不足／等待確認';el('advice').textContent='不能依此頁面建立新倉。';}}
 init();</script></body></html>
