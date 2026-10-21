@@ -1,1 +1,25 @@
-{"data_date":null,"history_days":0,"latest_prediction":{"regime":"資料不足／等待確認","ready":false,"reason":"首次啟用尚未累積歷史資料"},"evaluated_count":0,"exact_accuracy":null,"direction_accuracy":null,"latest_evaluations":[]}
+{
+  "data_date": "20261020",
+  "data_retrieved_at": "2026-10-21T15:04:18.265457+08:00",
+  "model_updated_at": "2026-10-21T15:06:26.614336+08:00",
+  "proxy": {
+    "price": 46353.1,
+    "source": "TXO 同到期買賣權結算價平價代理（未調整利率與股利）",
+    "expiry": "202610",
+    "pairs": 58
+  },
+  "history_days": 1,
+  "latest_prediction": {
+    "date": "20261020",
+    "target": "下一個有資料的交易日",
+    "created_at": "2026-10-21T15:06:26.613997+08:00",
+    "regime": "資料不足／等待確認",
+    "reason": "已累積 1 個交易日代理價格，需至少 21 個才開始預測",
+    "ready": false
+  },
+  "evaluated_count": 0,
+  "exact_accuracy": null,
+  "direction_accuracy": null,
+  "latest_evaluations": [],
+  "backtest_note": "Only predictions actually saved before the next session are evaluated; no past-date predictions are reconstructed. Adaptive thresholds activate after >=30 resolved predictions, calculated only from earlier outcomes. Signal uses options parity proxy, not observed futures spot."
+}
