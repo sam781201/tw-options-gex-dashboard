@@ -1,29 +1,17 @@
-# 台指選擇權 GEX / VEX 盤後曝險研究儀表板
+# 台指選擇權盤後曝險與逐日驗證儀表板 v2
 
-免費、靜態 GitHub Pages 網頁，GitHub Actions 在交易日盤後嘗試抓取期交所公開資料。**不含虛構即時數據**。
+使用期交所公開 TXO 每日結算行情；GitHub Actions 定時更新、GitHub Pages 以 `/docs` 發布。沒有付費 API。
 
-## 一次性部署
-1. 上傳 `docs/`, `scripts/`, `.github/` 等目錄到 GitHub 主分支。
-2. Settings → Pages → Build and deployment → Deploy from a branch，選 `main` / `/docs`，Save。
-3. Actions → Update TAIFEX TXO Data → Run workflow，檢查執行結果與 `docs/data.json`。
-4. 成功後開 `https://<帳號>.github.io/<儲存庫名稱>/`。
+## 功能
+- 官方資料日期、抓取時間（台灣）、分析時間各自顯示。
+- 從相同月份 C/P 結算價計算簡化 put-call parity **價格代理**；**不等於台指現貨或期貨市價**。
+- 累積至少 **21 個不同交易日**後，根據 5/20 日代理變化產生「強多、偏多、盤整、偏空、強空」研究分類與原因。
+- 每日生成不可覆寫的預測；下個有資料交易日自動對照，逐筆記錄方向命中及五類完全命中率。
+- 至少 30 筆**已完成的歷史驗證**後，僅根據先前結果調整分類門檻；不更動已發出的預測。沒有保證準確率。
+- 若代理資料不足、樣本少、來源異常，顯示等待確認。不會硬給交易進場指示。
 
-## 重要注意
-* GitHub Actions 定時排程採 UTC 10:30、12:30、14:30（臺灣 18:30、20:30、22:30），僅週一至週五；假日可能沿用最近一次有效快照。GitHub 排程可能延遲或被停用。
-* 期交所 API schema/端點可能調整：程式預設嘗試 `DailyMarketReportOpt` 與 `DailyMarketReportOption`；若抓取失敗，必須核對期交所 [OpenAPI 文件](https://openapi.taifex.com.tw/) 後設定 `TAIFEX_OPTION_URL`。目前尚未在線上成功測試端點，**自動更新不保證已可用**。
-* 原始「造市商」淨持倉不公開。以全部未平倉量代替其部位，並採簡化方向假設，數字僅用於情境研究。
-* 本儀表板的 `GEX+` 定義為**正 GEX 加總**，而不是原圖作者尚未公開的公式。
-* 單靠盤後 OI 無法合理判斷強多或強空。故方向狀態保守顯示未確認；未來接上具時間序列的價格、歷史 IV、成交量資料，才可驗證與開啟五種行情分類。
-* Spot、IV、距到期日由使用者輸入。預填價格只是履約價中位數，**不是最新指數值**。
-* Put/Call Wall 依模型下各方 Gamma 絕對曝險最高之履約價估計，並非保證的支撐或壓力。
-* Black–Scholes 模型用以計算 Greeks 近似，並非交易所官方 Greeks。VEX 是 Vanna 曝險簡化代理；注意方向、單位與資料誤差。
+## 重要限制
+回測是**上線後逐日留存的前瞻驗證（walk-forward journal）**，不是宣稱已完成多年度歷史回測。單日選擇權資料不能計算歷史準確率。`data.json` 的結算價與未平倉量來自官方，但不含造市商真實買賣方向、完整歷史 IV 或即時標的。GEX／VEX 目前保留在研究版圖表中，需手動驗證 IV、到期日與指數價格；方向模型不直接用 GEX 給買賣建議。
 
-## 本機處理資料
-Python 3.12+，僅標準函式庫：
-```bash
-python scripts/update_data.py
-```
-成功時寫入 `docs/data.json`，失敗時退出且**不覆蓋舊資料**。
-
-## 後續升級
-加入可驗證的期貨收盤價趨勢（日 K / MA5 / MA20 / MA60）、成交量、IV 序列、PCR、波動率與回測後，才啟用「強多／偏多／盤整／偏空／強空」和具體策略風險比對。這些數據不得以無根據的固定數值替代。
+## 上傳與部署
+將本 ZIP 裡的 `docs/`、`scripts/`、`.github/`、`README.md` 放在儲存庫**根目錄**。GitHub Pages：Settings > Pages > Deploy from a branch > `main` / `/docs`。Actions > Update TAIFEX TXO Data > Run workflow。首次建檔可能沒有足夠的歷史資料，屬正常。
