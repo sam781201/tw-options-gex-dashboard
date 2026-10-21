@@ -7,7 +7,7 @@
 .summaryline{padding:12px 15px;background:#192e47;border-left:3px solid #79aef5;border-radius:8px;line-height:1.8}
 @media(max-width:650px){.autogrid{grid-template-columns:1fr}}
 </style></head><body><main>
-<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v7｜支撐壓力圖表置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
+<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v8｜支撐壓力圖表置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
 <section class="card" id="levelsCard" style="border:2px solid #648fba"><h2>每日關鍵價位｜第一、第二支撐與壓力（自動計算）</h2>
 <p class="small">根據所選到期別的 Call／Put 未平倉量，找出附近候選價位；不是盤中成交驗證，也不是保證的支撐壓力。觸發條件需用實際台指／期貨價格與成交量確認。</p>
 <div style="background:#0d1c30;border:1px solid #395677;border-radius:12px;padding:12px;margin:12px 0"><h3 style="margin:5px 6px 9px;font-size:17px">自動價格地圖｜支撐、壓力與突破後下一關</h3><div id="levelsMap" role="img" aria-label="自動候選支撐壓力圖表" style="width:100%;overflow-x:auto"><p class="small">正在生成支撐壓力圖表…</p></div><small>橘色＝候選壓力；綠色＝候選支撐；黃色＝選擇權平價價格代理。越靠近中線，越接近參考價格；此圖為選擇權籌碼地圖，不是即時 K 線。</small></div>
@@ -19,6 +19,7 @@
 <p id="levelsNotice" class="summaryline">正在讀取官方選擇權未平倉量。如超過數秒仍未顯示，請檢查下方資料載入警告。</p>
 </section>
 
+<section class="card" id="dailyCompare" style="border:2px solid #648fba"><h2>昨日 vs 今日｜支撐壓力及未平倉量比較</h2><p class="small" id="comparisonStatus">等待歷史資料……</p><div id="comparePriceChart" class="plot" style="height:350px"></div><div id="compareOIChart" class="plot" style="height:370px"></div><div id="compareInsight" class="summaryline">需要兩個不同交易日、同一到期別的完整 OI 資料才能比較。</div><div style="overflow-x:auto"><table><thead><tr><th>關鍵價位</th><th>昨日 OI</th><th>今日 OI</th><th>增加／減少</th><th>說明</th></tr></thead><tbody id="compareTable"><tr><td colspan="5">尚無昨日資料</td></tr></tbody></table></div><small>OI 增減只表示未平倉部位變化，不代表確定的買賣方向或支撐壓力強弱；跨不同到期別不直接比較。價位升降使用各日相同規則與各日自己的參考價選取。</small></section>
 <div class="warning">官方選擇權未平倉量不是造市商持倉。價格代理 ≠ 台指現貨或期貨報價；GEX／VEX 需假設造市商方向和波動率，不可把模型結果當確定的支撐、壓力或交易訊號。</div>
 <section class="card"><h2>資料時間與自動更新狀態</h2><div class="grid"><div><small>行情所屬交易日</small><div class="metric" id="tradeDate">—</div></div><div><small>官方資料抓取時間（台灣）</small><div class="metric" style="font-size:17px" id="fetched">—</div></div><div><small>模型計算時間（台灣）</small><div class="metric" style="font-size:17px" id="modeled">—</div></div><div><small>資料筆數</small><div class="metric" id="count">—</div></div></div><p id="stale" class="small"></p></section>
 <section class="card"><h2>首頁白話判讀｜方向與波動分開看</h2>
@@ -40,7 +41,7 @@
 <div class="charts"><div class="card"><h2>GEX 各履約價</h2><div class="plot" id="gex"></div></div><div class="card"><h2>VEX 各履約價</h2><div class="plot" id="vex"></div></div><div class="card"><h2>GEX 曲線與 Gamma Flip</h2><div class="plot" id="curve"></div></div><div class="card"><h2>GEX+（自訂正值部分）</h2><div class="plot" id="plus"></div></div></div>
 <p class="small">曝險圖採簡化 Black–Scholes Gamma/Vanna，合約乘數每點 50 元。GEX+ 是本專案的自訂定義，不等同參考文章的私有公式。分類模型僅根據 21 日以上的買賣權平價代理趨勢；它不使用圖中的假設 IV 作方向訊號。自適應門檻須累積至少 30 筆事先記錄且已驗證的預測，避免事後修改紀錄。</p>
 </main><script>
-const el=x=>document.getElementById(x),fmt=x=>Number.isFinite(x)?Math.round(x).toLocaleString('zh-TW'):'—';let DATA=null,AN=null;
+const el=x=>document.getElementById(x),fmt=x=>Number.isFinite(x)?Math.round(x).toLocaleString('zh-TW'):'—';let DATA=null,AN=null,COMP=null;
 const date=x=>x&&/^\d{8}$/.test(x)?`${x.slice(0,4)}/${x.slice(4,6)}/${x.slice(6)}`:'—';const time=x=>x?new Date(x).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'—';
 async function json(path){const r=await fetch('./'+path+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(path+' '+r.status);return r.json()}
 function advice(regime){return {'強多':'模型偏向強勢上行。先確認真實台指價格與突破狀況，才評估買 Call／看漲價差；不建議裸賣 Call。','偏多':'模型偏向上行但不是追價指令。確認支撐後才評估有限風險的賣 Put 價差；不建議無保護賣 Put。','盤整':'模型看不出明顯趨勢。只有在真實 IV、風險報酬比與上下界均確認後，才評估雙邊價差。','偏空':'模型偏向下行。確認反彈壓力後才評估有限風險的賣 Call 價差。','強空':'模型偏向較強跌勢。確認真實行情後才評估買 Put／看跌價差；避免接刀。'}[regime]||'目前最適合等待：代理歷史、價格或模型訊號不足，不能給明確進場方向。'}
@@ -185,6 +186,42 @@ function setLevels(expiry,spot){
  note.textContent=`判斷原因：上方依 Call 未平倉量、下方依 Put 未平倉量找出距離參考價格約 3.5% 以內的集中價位；顯示的是候選支撐／壓力，不代表已確認突破。資料基準：${date(DATA.data_date)}；參考價格 ${fmt(spot)}（平價代理），到期別 ${expiry}。突破確認請另核對「實際期貨價收盤站穩／跌破、量能、回測不破／反彈不過」，網站目前不具備官方即時 K 線，不會宣稱已突破或預測一定走到下一關卡。`;
 }
 
+
+function oiLevels(entries,spot){
+ if(!(spot>0)||!Array.isArray(entries))return {rs:[],ss:[]};
+ const a=entries.map(x=>({k:+x.strike,C:+x.C||0,P:+x.P||0})),w=Math.max(1200,spot*.035);
+ const up=a.filter(x=>x.k>spot&&x.k<=spot+w&&x.C>=100).sort((x,y)=>y.C-x.C);
+ const dn=a.filter(x=>x.k<spot&&x.k>=spot-w&&x.P>=100).sort((x,y)=>y.P-x.P);
+ return {rs:up.filter(x=>x.C>=Math.max(100,(up[0]?.C||0)*.25)).sort((x,y)=>x.k-y.k).slice(0,4),
+ ss:dn.filter(x=>x.P>=Math.max(100,(dn[0]?.P||0)*.25)).sort((x,y)=>y.k-x.k).slice(0,4)};
+}
+function renderCompare(expiry){
+ const msg=el('comparisonStatus'),ins=el('compareInsight'),tbody=el('compareTable');
+ const current=COMP?.current,prev=COMP?.previous;
+ function unavailable(reason){msg.textContent=reason;ins.textContent='尚無足夠的同到期別兩日資料，不能聲稱支撐或壓力已增強／減弱。';tbody.innerHTML='<tr><td colspan="5">等待可比較的兩個交易日</td></tr>';el('comparePriceChart').textContent='歷史價位資料不足';el('compareOIChart').textContent='歷史 OI 資料不足';}
+ if(!current||current.date!==DATA.data_date)return unavailable('今天尚未建立 OI 快照，等待下一次 GitHub Actions 更新。');
+ const now=current.expiries?.[expiry]; if(!now)return unavailable('選定到期別尚無資料。');
+ const before=prev?.expiries?.[expiry];if(!before)return unavailable('尚無同一到期別的上一個有效交易日完整 OI 快照。');
+ const pnow=+current.proxy?.[expiry]||+AN?.proxy?.price;const pprev=+prev.proxy?.[expiry];
+ if(!(pnow>0&&pprev>0))return unavailable('前後交易日價格代理不足，無法比較候選支撐壓力價位。');
+ const a=oiLevels(now,pnow),b=oiLevels(before,pprev), f=x=>x?.k??null;
+ const labels=['第一壓力','第二壓力','第一支撐','第二支撐'];
+ const oldv=[f(b.rs[0]),f(b.rs[1]),f(b.ss[0]),f(b.ss[1])],newv=[f(a.rs[0]),f(a.rs[1]),f(a.ss[0]),f(a.ss[1])];
+ msg.textContent=`資料日期：${date(prev.date)} → ${date(current.date)}；相同到期別 ${expiry}；昨日基準價 ${fmt(pprev)} → 今日 ${fmt(pnow)}（均為選擇權平價代理）`;
+ if(window.Plotly){
+ Plotly.react('comparePriceChart',[{type:'bar',name:'昨日',x:labels,y:oldv,marker:{color:'#8c9caf'},text:oldv.map(x=>x??'缺少'),textposition:'outside'},{type:'bar',name:'今日',x:labels,y:newv,marker:{color:'#5da6ed'},text:newv.map(x=>x??'缺少'),textposition:'outside'}],{barmode:'group',paper_bgcolor:'#122139',plot_bgcolor:'#122139',font:{color:'#c4d7ef'},title:'候選支撐與壓力價位比較（點）',margin:{l:70,r:20,t:60,b:70},showlegend:true,yaxis:{title:'履約價',tickformat:',',gridcolor:'#2b405e'}},{responsive:true,displaylogo:false});
+ }
+ const strikes=[...new Set([...a.rs,...a.ss,...b.rs,...b.ss].map(x=>x.k))].sort((x,y)=>x-y).slice(0,16);
+ const oldMap=new Map(before.map(x=>[+x.strike,x])),newMap=new Map(now.map(x=>[+x.strike,x]));
+ const keys=strikes.flatMap(k=>[{k,cp:'C'},{k,cp:'P'}]).filter(x=>(oldMap.get(x.k)?.[x.cp]||0)+(newMap.get(x.k)?.[x.cp]||0)>0);
+ const axis=keys.map(x=>`${fmt(x.k)} ${x.cp}`),yold=keys.map(x=>+oldMap.get(x.k)?.[x.cp]||0),ynew=keys.map(x=>+newMap.get(x.k)?.[x.cp]||0);
+ if(window.Plotly){Plotly.react('compareOIChart',[{type:'bar',name:'昨日 OI',x:axis,y:yold,marker:{color:'#8c9caf'}},{type:'bar',name:'今日 OI',x:axis,y:ynew,marker:{color:'#59cfaa'}}],{barmode:'group',paper_bgcolor:'#122139',plot_bgcolor:'#122139',font:{color:'#c4d7ef'},title:'重要履約價 Call／Put OI 變化（口）',margin:{l:65,r:20,t:60,b:95},xaxis:{tickangle:-45},yaxis:{title:'未平倉口數',gridcolor:'#2b405e'}},{responsive:true,displaylogo:false});}
+ const rows=keys.map((x,i)=>{let delta=ynew[i]-yold[i],direction=delta>0?'部位增加':delta<0?'部位減少':'部位持平';return `<tr><td>${fmt(x.k)} ${x.cp}</td><td>${fmt(yold[i])}</td><td>${fmt(ynew[i])}</td><td>${delta>0?'+':''}${fmt(delta)}</td><td>${direction}；無法辨識買賣方</td></tr>`});
+ tbody.innerHTML=rows.join('')||'<tr><td colspan="5">相同到期別暫無共同重要價位</td></tr>';
+ const moves=labels.map((label,i)=>oldv[i]!=null&&newv[i]!=null?`${label} ${fmt(oldv[i])} → ${fmt(newv[i])}（${newv[i]>oldv[i]?'上移':newv[i]<oldv[i]?'下移':'不變'}）`:`${label} 無法比較`);
+ ins.textContent=moves.join('；')+'。提醒：關卡移動可能因價格基準改變或 OI 分布改變，並非單一買賣訊號。';
+}
+
 function autoApply(){
  if(!DATA)return;
  let expiry=el('expiry').value,rows=DATA.rows.filter(x=>x.expiry===expiry);
@@ -192,7 +229,7 @@ function autoApply(){
  manualScenario=false;
  el('autoSpot').textContent=v.spot?fmt(v.spot):'缺少資料';el('autoIV').textContent=v.iv?v.iv.toFixed(2)+'%':'缺少資料';el('autoTenor').textContent=v.tenor?v.tenor.toFixed(1)+' 天':'無法確認';
  showInterpretation(v);
- setLevels(expiry, v.spot || AN?.proxy?.price);
+ setLevels(expiry, v.spot || AN?.proxy?.price);renderCompare(expiry);
  el('spot').value=v.spot??'';el('iv').value=v.iv?.toFixed(2)??'';el('tenor').value=v.tenor?.toFixed(1)??'';
  el('manual').textContent=v.error
  ?'⚠️ 自動估算未完成：'+v.error+' 若要手動輸入，請展開「進階」。'
@@ -200,7 +237,7 @@ function autoApply(){
  render();
 }
 function render(){if(!DATA)return;let rows=DATA.rows.filter(x=>x.expiry===el('expiry').value),S=+el('spot').value,iv=+el('iv').value/100,T=+el('tenor').value/365,mode=el('scenario').value;if(!rows.length||!S||!iv||!T){el('flip').textContent='—';el('callwall').textContent='—';el('putwall').textContent='—';return}let a=ex(rows,S,iv,T,mode),xs=a.map(x=>x.strike),g=a.map(x=>x.gex),v=a.map(x=>x.vex),wall=k=>a.reduce((p,x)=>!p||x[k]>p[k]?x:p,null);el('callwall').textContent=fmt(wall('c')?.strike);el('putwall').textContent=fmt(wall('p')?.strike);chart('gex',[{type:'bar',x:xs,y:g,marker:{color:g.map(v=>v>=0?'#4aa994':'#d87983')}}]);chart('vex',[{type:'bar',x:xs,y:v,marker:{color:'#74a6e6'}}]);chart('plus',[{type:'bar',x:xs,y:a.map(x=>x.plus),marker:{color:'#44a98a'}}]);let min=S*.88,max=S*1.12,points=Array.from({length:61},(_,i)=>min+(max-min)*i/60),curve=points.map(p=>ex(rows,p,iv,T,mode).reduce((s,x)=>s+x.gex,0)),cross=[];for(let i=1;i<curve.length;i++)if(curve[i]*curve[i-1]<0)cross.push(points[i-1]+(points[i]-points[i-1])*-curve[i-1]/(curve[i]-curve[i-1]));el('flip').textContent=cross.length?fmt(cross.reduce((a,b)=>Math.abs(a-S)<Math.abs(b-S)?a:b)):'未找到';chart('curve',[{type:'scatter',mode:'lines',x:points,y:curve,line:{color:'#8fb8fa'}}]);}
-async function init(){try{[DATA,AN]=await Promise.all([json('data.json'),json('analysis.json')]);el('tradeDate').textContent=date(DATA.data_date);el('fetched').textContent=time(DATA.retrieved_at);el('modeled').textContent=time(AN.model_updated_at);el('count').textContent=fmt(DATA.rows.length);let p=AN.latest_prediction||{},r=p.regime||'等待資料';el('regime').textContent=r;el('reason').textContent=p.reason||'歷史資料尚未累積';el('advice').textContent=advice(r);el('automatic').textContent='自動：選擇權盤後資料、平價代理、歷史留存、次日驗證。自動估算：月選平價代理、IV、距到期天數；人工僅用於官方休市改期、特殊到期別或報價不足，進階欄位會提示。';el('days').textContent=AN.history_days??0;el('evaluated').textContent=AN.evaluated_count??0;el('direction').textContent=AN.direction_accuracy==null?'樣本不足':(AN.direction_accuracy*100).toFixed(1)+'%';el('exact').textContent=AN.exact_accuracy==null?'樣本不足':(AN.exact_accuracy*100).toFixed(1)+'%';el('verifyNote').textContent=AN.backtest_note||'尚未有下一交易日結果';let histories=AN.latest_evaluations||[];if(histories.length)el('history').innerHTML=histories.slice().reverse().map(v=>`<tr><td>${v.prediction_date}</td><td>${v.outcome_date}</td><td>${v.predicted}</td><td>${v.actual}</td><td>${(v.return*100).toFixed(2)}%</td><td>${v.direction_hit?'命中':'未命中'}</td></tr>`).join('');let exps=[...new Set(DATA.rows.map(x=>x.expiry))].sort();el('expiry').innerHTML=exps.map(s=>`<option>${s}</option>`).join('');let px=AN.proxy?.price;el('proxy').textContent=px?fmt(px):'無有效代理';el('stale').textContent='資料為 '+date(DATA.data_date)+' 的盤後快照，抓取時間不是行情即時時間。'+(AN.history_days<21?' 尚未累積 21 個可用的不同交易日，方向判斷暫停。':'');el('calculate').onclick=()=>{manualScenario=true;render();setLevels(el('expiry').value,+el('spot').value);el('manual').textContent='自訂情境：目前三個欄位使用手動輸入；回到其他到期別可恢復自動估算。';};
+async function init(){try{[DATA,AN]=await Promise.all([json('data.json'),json('analysis.json')]);try{COMP=await json('oi_compare.json')}catch(e){COMP=null;}el('tradeDate').textContent=date(DATA.data_date);el('fetched').textContent=time(DATA.retrieved_at);el('modeled').textContent=time(AN.model_updated_at);el('count').textContent=fmt(DATA.rows.length);let p=AN.latest_prediction||{},r=p.regime||'等待資料';el('regime').textContent=r;el('reason').textContent=p.reason||'歷史資料尚未累積';el('advice').textContent=advice(r);el('automatic').textContent='自動：選擇權盤後資料、平價代理、歷史留存、次日驗證。自動估算：月選平價代理、IV、距到期天數；人工僅用於官方休市改期、特殊到期別或報價不足，進階欄位會提示。';el('days').textContent=AN.history_days??0;el('evaluated').textContent=AN.evaluated_count??0;el('direction').textContent=AN.direction_accuracy==null?'樣本不足':(AN.direction_accuracy*100).toFixed(1)+'%';el('exact').textContent=AN.exact_accuracy==null?'樣本不足':(AN.exact_accuracy*100).toFixed(1)+'%';el('verifyNote').textContent=AN.backtest_note||'尚未有下一交易日結果';let histories=AN.latest_evaluations||[];if(histories.length)el('history').innerHTML=histories.slice().reverse().map(v=>`<tr><td>${v.prediction_date}</td><td>${v.outcome_date}</td><td>${v.predicted}</td><td>${v.actual}</td><td>${(v.return*100).toFixed(2)}%</td><td>${v.direction_hit?'命中':'未命中'}</td></tr>`).join('');let exps=[...new Set(DATA.rows.map(x=>x.expiry))].sort();el('expiry').innerHTML=exps.map(s=>`<option>${s}</option>`).join('');let px=AN.proxy?.price;el('proxy').textContent=px?fmt(px):'無有效代理';el('stale').textContent='資料為 '+date(DATA.data_date)+' 的盤後快照，抓取時間不是行情即時時間。'+(AN.history_days<21?' 尚未累積 21 個可用的不同交易日，方向判斷暫停。':'');el('calculate').onclick=()=>{manualScenario=true;render();setLevels(el('expiry').value,+el('spot').value);el('manual').textContent='自訂情境：目前三個欄位使用手動輸入；回到其他到期別可恢復自動估算。';};
 el('scenario').onchange=()=>{render();showInterpretation({spot:+el('spot').value,iv:+el('iv').value,tenor:+el('tenor').value});};
 el('expiry').onchange=autoApply;let monthly=exps.find(x=>/^\d{6}$/.test(x)&&tenorFromSnapshot(x,DATA.data_date)!==null);if(monthly)el('expiry').value=monthly;autoApply();}catch(e){el('stale').textContent='資料無法載入：'+e.message+'。請檢查 Actions 和 docs 檔案。';el('resLevels').textContent='無法讀取';el('supLevels').textContent='無法讀取';el('breakLevels').textContent='行情檔案載入失敗';el('levelsNotice').textContent='資料讀取失敗：'+e.message;el('regime').textContent='資料不足／等待確認';el('advice').textContent='不能依此頁面建立新倉。';}}
 init();</script></body></html>
