@@ -1,37 +1,36 @@
-
 name: Update TAIFEX TXO Data
-
 on:
   workflow_dispatch:
   schedule:
-    # 台灣時間週一至週五 18:30、20:30、22:30
-    - cron: '30 10,12,14 * * 1-5'
-
+    - cron: '30 10,12,14 * * 1-5' # 18:30,20:30,22:30 Asia/Taipei
 permissions:
   contents: write
-
+concurrency:
+  group: taifex-daily
+  cancel-in-progress: false
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Fetch official TAIFEX data
+      - name: Preserve previous trading day OI
+        run: python scripts/archive_oi.py
+      - name: Download official settlement quotes
         run: python scripts/update_data.py
-
-      - name: Analyze and evaluate forecasts
+      - name: Archive new OI and compare with previous trading day
+        run: python scripts/archive_oi.py
+      - name: Record forecast and evaluate previous forecast
         run: python scripts/analyze.py
-
-      - name: Save updated data
+      - name: Commit reproducible records
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data.json docs/analysis.json docs/forecasts.json docs/evaluations.json docs/history/
+          git add docs/data.json docs/analysis.json docs/forecasts.json docs/evaluations.json docs/history docs/oi_history docs/oi_compare.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update analysis and forecasts'
+            git commit -m 'data: update official TXO and walk-forward record'
+            git pull --rebase
             git push
           fi
