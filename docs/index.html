@@ -7,7 +7,7 @@
 .summaryline{padding:12px 15px;background:#192e47;border-left:3px solid #79aef5;border-radius:8px;line-height:1.8}
 @media(max-width:650px){.autogrid{grid-template-columns:1fr}}
 </style></head><body><main>
-<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v8｜支撐壓力圖表置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
+<header><h1>台指選擇權｜曝險地圖與預測驗證</h1><div class="small">免費盤後研究版 v9｜支撐壓力圖表置頂・資料不足備援・非盤中即時行情・臺灣時間（UTC+8）</div></header>
 <section class="card" id="levelsCard" style="border:2px solid #648fba"><h2>每日關鍵價位｜第一、第二支撐與壓力（自動計算）</h2>
 <p class="small">根據所選到期別的 Call／Put 未平倉量，找出附近候選價位；不是盤中成交驗證，也不是保證的支撐壓力。觸發條件需用實際台指／期貨價格與成交量確認。</p>
 <div style="background:#0d1c30;border:1px solid #395677;border-radius:12px;padding:12px;margin:12px 0"><h3 style="margin:5px 6px 9px;font-size:17px">自動價格地圖｜支撐、壓力與突破後下一關</h3><div id="levelsMap" role="img" aria-label="自動候選支撐壓力圖表" style="width:100%;overflow-x:auto"><p class="small">正在生成支撐壓力圖表…</p></div><small>橘色＝候選壓力；綠色＝候選支撐；黃色＝選擇權平價價格代理。越靠近中線，越接近參考價格；此圖為選擇權籌碼地圖，不是即時 K 線。</small></div>
@@ -240,4 +240,100 @@ function render(){if(!DATA)return;let rows=DATA.rows.filter(x=>x.expiry===el('ex
 async function init(){try{[DATA,AN]=await Promise.all([json('data.json'),json('analysis.json')]);try{COMP=await json('oi_compare.json')}catch(e){COMP=null;}el('tradeDate').textContent=date(DATA.data_date);el('fetched').textContent=time(DATA.retrieved_at);el('modeled').textContent=time(AN.model_updated_at);el('count').textContent=fmt(DATA.rows.length);let p=AN.latest_prediction||{},r=p.regime||'等待資料';el('regime').textContent=r;el('reason').textContent=p.reason||'歷史資料尚未累積';el('advice').textContent=advice(r);el('automatic').textContent='自動：選擇權盤後資料、平價代理、歷史留存、次日驗證。自動估算：月選平價代理、IV、距到期天數；人工僅用於官方休市改期、特殊到期別或報價不足，進階欄位會提示。';el('days').textContent=AN.history_days??0;el('evaluated').textContent=AN.evaluated_count??0;el('direction').textContent=AN.direction_accuracy==null?'樣本不足':(AN.direction_accuracy*100).toFixed(1)+'%';el('exact').textContent=AN.exact_accuracy==null?'樣本不足':(AN.exact_accuracy*100).toFixed(1)+'%';el('verifyNote').textContent=AN.backtest_note||'尚未有下一交易日結果';let histories=AN.latest_evaluations||[];if(histories.length)el('history').innerHTML=histories.slice().reverse().map(v=>`<tr><td>${v.prediction_date}</td><td>${v.outcome_date}</td><td>${v.predicted}</td><td>${v.actual}</td><td>${(v.return*100).toFixed(2)}%</td><td>${v.direction_hit?'命中':'未命中'}</td></tr>`).join('');let exps=[...new Set(DATA.rows.map(x=>x.expiry))].sort();el('expiry').innerHTML=exps.map(s=>`<option>${s}</option>`).join('');let px=AN.proxy?.price;el('proxy').textContent=px?fmt(px):'無有效代理';el('stale').textContent='資料為 '+date(DATA.data_date)+' 的盤後快照，抓取時間不是行情即時時間。'+(AN.history_days<21?' 尚未累積 21 個可用的不同交易日，方向判斷暫停。':'');el('calculate').onclick=()=>{manualScenario=true;render();setLevels(el('expiry').value,+el('spot').value);el('manual').textContent='自訂情境：目前三個欄位使用手動輸入；回到其他到期別可恢復自動估算。';};
 el('scenario').onchange=()=>{render();showInterpretation({spot:+el('spot').value,iv:+el('iv').value,tenor:+el('tenor').value});};
 el('expiry').onchange=autoApply;let monthly=exps.find(x=>/^\d{6}$/.test(x)&&tenorFromSnapshot(x,DATA.data_date)!==null);if(monthly)el('expiry').value=monthly;autoApply();}catch(e){el('stale').textContent='資料無法載入：'+e.message+'。請檢查 Actions 和 docs 檔案。';el('resLevels').textContent='無法讀取';el('supLevels').textContent='無法讀取';el('breakLevels').textContent='行情檔案載入失敗';el('levelsNotice').textContent='資料讀取失敗：'+e.message;el('regime').textContent='資料不足／等待確認';el('advice').textContent='不能依此頁面建立新倉。';}}
-init();</script></body></html>
+init();</script>
+<script>
+(function () {
+  const panel = document.createElement('section');
+  panel.className = 'card';
+  panel.style.border = '2px solid #648fba';
+  panel.innerHTML = `
+    <h2>v9｜官方資料更新監控</h2>
+    <div class="autogrid">
+      <div class="autoitem">
+        <small>資料狀態</small>
+        <div class="metric" id="v9state">檢查中</div>
+        <small id="v9reason"></small>
+      </div>
+      <div class="autoitem">
+        <small>最新交易日</small>
+        <div class="metric" id="v9date">—</div>
+        <small id="v9fetch"></small>
+      </div>
+      <div class="autoitem">
+        <small>昨日／今日比較</small>
+        <div class="metric" id="v9compare">檢查中</div>
+        <small id="v9compareDate"></small>
+      </div>
+    </div>
+    <p class="small">資料為官方盤後快照，非即時行情。更新判斷不含國定假日及期交所特殊休市日。</p>
+    <button type="button" id="v9refresh">重新取得最新資料</button>
+  `;
+  document.querySelector('header').after(panel);
+
+  const show = (id, value) => {
+    document.getElementById(id).textContent = value;
+  };
+  document.getElementById('v9refresh').onclick = () => location.reload();
+
+  function expectedDate() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const part = name => +parts.find(p => p.type === name).value;
+    const d = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+    if (part('hour') < 19) d.setUTCDate(d.getUTCDate() - 1);
+    while (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+      d.setUTCDate(d.getUTCDate() - 1);
+    }
+    return d.toISOString().slice(0, 10).replace(/-/g, '');
+  }
+
+  async function check() {
+    try {
+      const stamp = Date.now();
+      const [data, compare] = await Promise.all([
+        fetch('./data.json?v=' + stamp, {cache:'no-store'}).then(r => {
+          if (!r.ok) throw Error('行情檔案載入失敗');
+          return r.json();
+        }),
+        fetch('./oi_compare.json?v=' + stamp, {cache:'no-store'})
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      ]);
+
+      const actual = String(data.data_date || '');
+      const expected = expectedDate();
+      show('v9date', actual.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1/$2/$3'));
+      show('v9fetch', '成功抓取：' + (data.retrieved_at || '未記錄'));
+
+      const state = document.getElementById('v9state');
+      if (actual >= expected) {
+        state.textContent = '資料日期正常';
+        state.style.color = '#55d4aa';
+        show('v9reason', '符合目前預期的交易日');
+      } else {
+        state.textContent = '資料待更新';
+        state.style.color = '#f5c878';
+        show('v9reason', '資料早於預期交易日，請確認官方發布及 Actions');
+      }
+
+      if (compare?.current?.date === actual &&
+          compare?.previous?.date &&
+          compare.previous.date !== actual) {
+        show('v9compare', '兩日資料已建立');
+        show('v9compareDate',
+          compare.previous.date + ' → ' + compare.current.date);
+      } else {
+        show('v9compare', '比較資料待確認');
+        show('v9compareDate', '請檢查 OI 快照日期');
+      }
+    } catch (e) {
+      show('v9state', '載入失敗');
+      show('v9reason', e.message);
+    }
+  }
+  check();
+})();
+</script>
+</body></html>
