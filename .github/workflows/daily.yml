@@ -2,8 +2,8 @@ name: Update TAIFEX TXO Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 10,12,14 * * 1-5' # 18:30,20:30,22:30 Asia/Taipei
-permissions:
+     - cron: '30 8,9,15,17,19,21,23 * * 1-5'
+      timezone: 'Asia/Taipei'
   contents: write
 concurrency:
   group: taifex-daily
