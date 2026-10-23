@@ -1,15 +1,20 @@
 {
-  "data_date": "20261021",
-  "data_retrieved_at": "2026-10-22T14:14:39.177602+08:00",
-  "model_updated_at": "2026-10-23T02:07:37.200537+08:00",
-  "proxy": null,
-  "history_days": 1,
+  "data_date": "20261022",
+  "data_retrieved_at": "2026-10-23T13:13:57.460266+08:00",
+  "model_updated_at": "2026-10-23T13:13:57.573943+08:00",
+  "proxy": {
+    "price": 46260.0,
+    "source": "TXO 同到期買賣權結算價平價代理（未調整利率與股利）",
+    "expiry": "202611",
+    "pairs": 32
+  },
+  "history_days": 2,
   "latest_prediction": {
-    "date": "20261021",
+    "date": "20261022",
     "target": "下一個有資料的交易日",
-    "created_at": "2026-10-22T14:14:39.319388+08:00",
+    "created_at": "2026-10-23T13:13:57.573765+08:00",
     "regime": "資料不足／等待確認",
-    "reason": "已累積 1 個交易日代理價格，需至少 21 個才開始預測",
+    "reason": "已累積 2 個交易日代理價格，需至少 21 個才開始預測",
     "ready": false
   },
   "evaluated_count": 0,
