@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>台指選擇權｜全履約價 OI 地圖</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root{font-family:system-ui,"Microsoft JhengHei",sans-serif;color:#eef4ff;background:#122139;color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:6px}button,select{color:#eef4ff;background:#243955;border:1px solid #547190;border-radius:7px;padding:8px 11px;cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid #94c8ff}button[aria-pressed=true]{background:#31577c;border-color:#9dd0ff}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.label{color:#afbed3;font-size:13px}h3{font-size:19px;margin:9px 0 6px}p{line-height:1.65;font-size:13px;color:#afbed3}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0}.stat{background:#192f4b;border:1px solid #324e6b;border-radius:8px;padding:10px;font-size:13px}.stat b{font-size:19px;display:block;margin-top:4px}.plot{height:475px;width:100%}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid #354b66}.tablewrap{max-height:190px;overflow:auto}.warn{color:#f2c482}#error{color:#ffa9a9}@media(max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.plot{height:400px}body{padding:2px}}
+</style>
+</head><body>
+<h3>全市場履約價 OI 地圖（不截掉 40,000 點以下）</h3>
+<p id="dateLabel">載入行情資料中……</p>
+<div class="row"><span class="label">到期別</span><select id="expiry" aria-label="全市場圖到期別"></select><button id="all" aria-pressed="true">全部履約價</button><button id="below">40,000 以下</button><button id="near">參考價附近 ±2,000 點</button><button id="reset">恢復全範圍</button></div>
+<div class="stats"><div class="stat">最小履約價<b id="minimum">—</b></div><div class="stat">最大履約價<b id="maximum">—</b></div><div class="stat">40,000 以下有效履約價<b id="countBelow">—</b></div><div class="stat">該到期別 Call／Put OI<b id="totalOI">—</b></div></div>
+<div id="plot" class="plot" role="img" aria-label="全部履約價 Call 與 Put 未平倉量長條圖，可縮放"></div>
+<p id="plotNote">Call 是橘色，Put 是綠色。可按上方按鈕切換或直接拖曳縮放。顯示全到期別、全履約價，沒有近端 ±3.5% 限制。</p>
+<div class="tablewrap"><table><thead><tr><th>該到期別主要 OI 集中位置</th><th>履約價</th><th>未平倉口數</th></tr></thead><tbody id="ranked"><tr><td colspan="3">讀取中……</td></tr></tbody></table></div>
+<p class="warn">這張圖表示選擇權未平倉量分布，不是造市商實際買賣方向。遠端 Put OI 高，不表示價格一定會跌到那裡，也不表示該價位一定撐得住；請以同到期別及官方交易日為準。</p>
+<p id="error"></p>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),fmt=n=>Number(n).toLocaleString('zh-TW',{maximumFractionDigits:0});
+let raw=null,expiry='',view='all',parentExpiry=null;
+function aggregate(rows){const m=new Map();for(const r of rows){const k=Number(r.strike),oi=Number(r.oi);if(!Number.isFinite(k)||!Number.isFinite(oi)||oi<0||!['C','P'].includes(r.cp))continue;const z=m.get(k)||{strike:k,C:0,P:0};z[r.cp]+=oi;m.set(k,z);}return [...m.values()].sort((a,b)=>a.strike-b.strike);}
+function selectedRows(){return aggregate(raw.rows.filter(x=>x.expiry===expiry));}
+function proxy(rows){const m=new Map();for(const r of rows){if(!(Number(r.price)>0))continue;let k=Number(r.strike),z=m.get(k)||{};z[r.cp]=+r.price;m.set(k,z)}const f=[...m].filter(([,x])=>x.C>0&&x.P>0).map(([k,x])=>k+x.C-x.P).filter(x=>x>0).sort((a,b)=>a-b);if(f.length<5)return null;const mid=f[Math.floor(f.length/2)],f2=f.filter(x=>Math.abs(x-mid)/mid<.035);return f2.length>=5?f2[Math.floor(f2.length/2)]:mid;}
+function spot(){try{const v=Number(parent.document.getElementById('spot')?.value);if(v>0)return v;}catch(e){}return proxy(raw.rows.filter(x=>x.expiry===expiry));}
+function setView(v){view=v;for(const key of ['all','below','near'])$(key).setAttribute('aria-pressed',String(key===v));draw();}
+function draw(){if(!raw||!expiry)return;const arr=selectedRows();if(!arr.length){$('plot').textContent='選擇的到期別沒有有效資料';return;}
+ const floor=arr[0].strike,ceil=arr[arr.length-1].strike,lower=arr.filter(x=>x.strike<40000),oc=arr.reduce((z,x)=>z+x.C,0),op=arr.reduce((z,x)=>z+x.P,0);
+ $('minimum').textContent=fmt(floor);$('maximum').textContent=fmt(ceil);$('countBelow').textContent=fmt(lower.length);$('totalOI').textContent=fmt(oc)+'／'+fmt(op);
+ const rows=raw.rows.filter(x=>x.expiry===expiry),px=spot(),xmin=view==='below'?floor:view==='near'?(px??floor)-2000:floor,xmax=view==='below'?Math.min(40000,ceil):view==='near'?(px??ceil)+2000:ceil;
+ const filtered=arr.filter(x=>x.strike>=xmin&&x.strike<=xmax);
+ const bars=[{type:'bar',name:'Call OI',x:filtered.map(x=>x.strike),y:filtered.map(x=>x.C),marker:{color:'#eda369'},hovertemplate:'履約價 %{x:,.0f}<br>Call OI %{y:,.0f} 口<extra></extra>'},{type:'bar',name:'Put OI',x:filtered.map(x=>x.strike),y:filtered.map(x=>x.P),marker:{color:'#4dbda4'},hovertemplate:'履約價 %{x:,.0f}<br>Put OI %{y:,.0f} 口<extra></extra>'}];
+ const shapes=[{type:'line',x0:40000,x1:40000,y0:0,y1:1,yref:'paper',line:{color:'#dbd4ef',width:1,dash:'dot'}}];if(px>0)shapes.push({type:'line',x0:px,x1:px,y0:0,y1:1,yref:'paper',line:{color:'#f6d66f',width:2,dash:'dash'}});
+ const layout={paper_bgcolor:'#122139',plot_bgcolor:'#122139',font:{color:'#d3e3f7'},margin:{l:55,r:15,t:33,b:58},barmode:'group',bargap:.13,showlegend:true,legend:{orientation:'h',x:0,y:1.12},xaxis:{title:'履約價（點）',range:[xmin-100,xmax+100],tickformat:',',gridcolor:'#2d4462',zeroline:false,rangeslider:{visible:false}},yaxis:{title:'OI（口）',rangemode:'tozero',gridcolor:'#2d4462'},shapes,annotations:[{x:40000,y:1,xref:'x',yref:'paper',text:'40,000',showarrow:false,yanchor:'bottom',font:{color:'#dbd4ef',size:12}}]};
+ $('plotNote').textContent=`${expiry}｜官方交易日 ${String(raw.data_date).replace(/^(\d{4})(\d{2})(\d{2})$/,'$1/$2/$3')}｜顯示 ${fmt(filtered.length)}／${fmt(arr.length)} 個履約價，圖中黃色虛線是參考價代理（非實際台指期）。「40,000 以下」只顯示該到期別確實有資料的部分。`;
+ if(window.Plotly){Plotly.react('plot',bars,layout,{responsive:true,displaylogo:false,scrollZoom:true});}else{$('plot').textContent='圖表套件無法載入，請檢查網路；下方仍列出主要 OI 集中位置。';}
+ const topC=[...arr].sort((a,b)=>b.C-a.C).slice(0,4).filter(x=>x.C>0).map(x=>['Call',x.strike,x.C]);const topP=[...arr].sort((a,b)=>b.P-a.P).slice(0,4).filter(x=>x.P>0).map(x=>['Put',x.strike,x.P]);const far=arr.filter(x=>x.strike<40000).sort((a,b)=>(b.C+b.P)-(a.C+a.P)).slice(0,4).filter(x=>x.C+x.P>0).map(x=>['40,000 以下',x.strike,x.C+x.P]);$('ranked').innerHTML=[...topC,...topP,...far].map(([t,k,v])=>`<tr><td>${t}</td><td>${fmt(k)}</td><td>${fmt(v)} 口</td></tr>`).join('')||'<tr><td colspan="3">沒有未平倉量</td></tr>';
+}
+async function init(){try{const res=await fetch('./data.json?v='+Date.now(),{cache:'no-store'});if(!res.ok)throw Error('data.json HTTP '+res.status);raw=await res.json();if(!Array.isArray(raw.rows))throw Error('缺少 rows');const exps=[...new Set(raw.rows.map(x=>x.expiry))].sort();$('expiry').replaceChildren(...exps.map(e=>new Option(e,e)));let q=null;try{parentExpiry=parent.document.getElementById('expiry');q=parentExpiry?.value||null;}catch(e){}expiry=exps.includes(q)?q:exps.find(x=>/^\d{6}$/.test(x))||exps[0];$('expiry').value=expiry;$('dateLabel').textContent='官方交易日：'+raw.data_date+'｜此圖顯示該到期別所有履約價（含 40,000 以下），與首頁近端關卡不同。';$('expiry').onchange=()=>{expiry=$('expiry').value;setView('all');};if(parentExpiry){parentExpiry.addEventListener('change',()=>{if(exps.includes(parentExpiry.value)){expiry=parentExpiry.value;$('expiry').value=expiry;setView('all');}});}setView('all');}catch(e){$('error').textContent='載入失敗：'+e.message;}}
+$('all').onclick=()=>setView('all');$('below').onclick=()=>setView('below');$('near').onclick=()=>setView('near');$('reset').onclick=()=>setView('all');init();
+</script></body></html>
