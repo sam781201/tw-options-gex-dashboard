@@ -1,0 +1,11 @@
+{
+  "date": "20261110",
+  "proxy": {
+    "price": 42645.0,
+    "source": "TXO 同到期買賣權結算價平價代理（未調整利率與股利）",
+    "expiry": "202611",
+    "pairs": 57
+  },
+  "rows_count": 3448,
+  "source": "https://openapi.taifex.com.tw/v1/DailyMarketReportOpt"
+}
