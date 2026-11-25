@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "prediction_date": "20261123",
+    "outcome_date": "20261124",
+    "predicted": "強空",
+    "actual": "強多",
+    "return": 0.11776,
+    "exact_match": false,
+    "direction_hit": false,
+    "model": "proxy-trend-v1"
+  }
+]
