@@ -1,30 +1,30 @@
 {
-  "data_date": "20261124",
-  "data_retrieved_at": "2026-11-25T17:00:05.599486+08:00",
-  "model_updated_at": "2026-11-26T03:31:37.047973+08:00",
+  "data_date": "20261125",
+  "data_retrieved_at": "2026-11-26T16:47:55.632244+08:00",
+  "model_updated_at": "2026-11-26T16:47:55.732715+08:00",
   "proxy": {
-    "price": 40910.0,
+    "price": 38120.0,
     "source": "TXO 同到期買賣權結算價平價代理（未調整利率與股利）",
     "expiry": "202612",
-    "pairs": 29
+    "pairs": 27
   },
-  "history_days": 22,
+  "history_days": 23,
   "latest_prediction": {
-    "date": "20261124",
+    "date": "20261125",
     "target": "下一個有資料的交易日",
-    "created_at": "2026-11-25T17:00:05.722521+08:00",
+    "created_at": "2026-11-26T16:47:55.732333+08:00",
     "regime": "強空",
     "ready": true,
     "model": "proxy-trend-v1",
-    "score": -0.045526,
+    "score": -0.098069,
     "neutral": 0.003,
     "strong": 0.012,
-    "reason": "平價代理價格 40,910.0；5 日變化 +0.12%；20 日變化 -11.57%；5 日均值 38,395.8、20 日均值 42,336.3。這是趨勢代理，並非真實台指報價。",
+    "reason": "平價代理價格 38,120.0；5 日變化 -4.82%；20 日變化 -17.29%；5 日均值 38,010.0、20 日均值 41,937.8。這是趨勢代理，並非真實台指報價。",
     "calibrated": false
   },
-  "evaluated_count": 1,
-  "exact_accuracy": 0.0,
-  "direction_accuracy": 0.0,
+  "evaluated_count": 2,
+  "exact_accuracy": 0.5,
+  "direction_accuracy": 0.5,
   "latest_evaluations": [
     {
       "prediction_date": "20261123",
@@ -34,6 +34,16 @@
       "return": 0.11776,
       "exact_match": false,
       "direction_hit": false,
+      "model": "proxy-trend-v1"
+    },
+    {
+      "prediction_date": "20261124",
+      "outcome_date": "20261125",
+      "predicted": "強空",
+      "actual": "強空",
+      "return": -0.068198,
+      "exact_match": true,
+      "direction_hit": true,
       "model": "proxy-trend-v1"
     }
   ],

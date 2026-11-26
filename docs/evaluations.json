@@ -8,5 +8,15 @@
     "exact_match": false,
     "direction_hit": false,
     "model": "proxy-trend-v1"
+  },
+  {
+    "prediction_date": "20261124",
+    "outcome_date": "20261125",
+    "predicted": "強空",
+    "actual": "強空",
+    "return": -0.068198,
+    "exact_match": true,
+    "direction_hit": true,
+    "model": "proxy-trend-v1"
   }
 ]
